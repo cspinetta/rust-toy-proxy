@@ -1,6 +1,6 @@
 Toy Proxy
 =================================
-PLaying with [Rust].
+Playing around with [Rust] and IO performance.
 
 ## Start server
 
@@ -8,9 +8,15 @@ PLaying with [Rust].
 cargo run --bin single-thread
 ```
 
+Or:
+
+```bash
+cargo run --bin multi-threads
+```
+
 ### Some tests:
 
-A simple way to test the app is [start a server with python](https://docs.python.org/3/library/http.server.html): `python3 -m http.server 9290` , then start the app and do some requests:
+A simple way to test the app is [start a server with python](https://docs.python.org/3/library/http.server.html): `python3 -m http.server 9000` , then start the app and generate some requests:
 
 ```bash
 curl -i 'http://localhost:3000/'
@@ -56,7 +62,7 @@ NUMA node0 CPU(s):     0-3
 ab -c 50 -n 50000 'http://localhost:3000/'
 ```
 
-Result with `single-thread`:
+**Result with `single-thread`:**
 
 ```
 Server Software:        SimpleHTTP/0.6
@@ -98,7 +104,7 @@ Percentage of the requests served within a certain time (ms)
  100%   7447 (longest request)
 ```
 
-Result with `multi-threads`:
+**Result with `multi-threads`:**
 
 ```
 Server Software:        SimpleHTTP/0.6
