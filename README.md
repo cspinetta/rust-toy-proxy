@@ -14,7 +14,7 @@ Or:
 cargo run --bin multi-threads
 ```
 
-### Some tests:
+## Some tests:
 
 A simple way to test the app is [start a server with python](https://docs.python.org/3/library/http.server.html): `python3 -m http.server 9000` , then start the app and generate some requests:
 
@@ -24,7 +24,7 @@ curl -i 'http://localhost:3000/'
 curl -i 'http://localhost:3000/path/to/files'
 ```
 
-### Very small benchmark:
+## Very small benchmark:
 
 **System information:**
 
