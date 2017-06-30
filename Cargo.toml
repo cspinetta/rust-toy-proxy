@@ -1,0 +1,33 @@
+[package]
+name = "toy-load-balancer"
+version = "0.1.0"
+authors = ["Cristian Spinetta <cebs91@gmail.com>"]
+
+[[bin]]
+name = "single-thread"
+path = "src/single-thread.rs"
+
+[dependencies]
+
+log = "0.3"
+#env_logger="0.4.3"
+pretty_env_logger = "0.1"
+
+serde_derive = "1.0"
+serde = "1.0"
+serde_json = "1.0"
+
+rand = "0.3"
+
+# IO
+hyper = "0.11"
+hyper-tls = "0.1"
+
+tokio-core = "0.1"
+tokio-pool = "0.1"
+tokio-proto = "0.1"
+tokio-service = "0.1"
+futures = "0.1"
+futures-cpupool = "0.1"
+
+num_cpus = "1.5"
