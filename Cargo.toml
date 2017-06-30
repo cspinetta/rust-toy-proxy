@@ -11,6 +11,10 @@ path = "src/single-thread.rs"
 name = "multi-threads"
 path = "src/multi-threads.rs"
 
+[[bin]]
+name = "multi-threads-net-2"
+path = "src/multi-threads-net-2.rs"
+
 [dependencies]
 
 log = "0.3"
@@ -34,5 +38,7 @@ tokio-service = "0.1"
 tokio-io = "0.1"
 futures = "0.1"
 futures-cpupool = "0.1"
+
+net2 = "0.2"
 
 num_cpus = "1.5"

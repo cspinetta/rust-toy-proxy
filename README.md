@@ -140,4 +140,46 @@ Percentage of the requests served within a certain time (ms)
  100%  15044 (longest request)
 ```
 
+Result with `multi-threads-net-2`:
+
+```
+Server Software:        SimpleHTTP/0.6
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /
+Document Length:        658 bytes
+
+Concurrency Level:      50
+Time taken for tests:   74.682 seconds
+Complete requests:      50000
+Failed requests:        1
+   (Connect: 0, Receive: 0, Length: 1, Exceptions: 0)
+Non-2xx responses:      1
+Total transferred:      40599280 bytes
+HTML transferred:       32899342 bytes
+Requests per second:    669.51 [#/sec] (mean)
+Time per request:       74.682 [ms] (mean)
+Time per request:       1.494 [ms] (mean, across all concurrent requests)
+Transfer rate:          530.89 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       6
+Processing:     2   72 380.1     10   15235
+Waiting:        1   72 380.1     10   15235
+Total:          2   73 380.1     10   15236
+
+Percentage of the requests served within a certain time (ms)
+  50%     10
+  66%     11
+  75%     13
+  80%     13
+  90%     17
+  95%    212
+  98%   1010
+  99%   1016
+ 100%  15236 (longest request)
+```
+
 [Rust]:https://www.rust-lang.org/en-US/index.html
