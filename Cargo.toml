@@ -7,6 +7,10 @@ authors = ["Cristian Spinetta <cebs91@gmail.com>"]
 name = "single-thread"
 path = "src/single-thread.rs"
 
+[[bin]]
+name = "multi-threads"
+path = "src/multi-threads.rs"
+
 [dependencies]
 
 log = "0.3"
@@ -27,6 +31,7 @@ tokio-core = "0.1"
 tokio-pool = "0.1"
 tokio-proto = "0.1"
 tokio-service = "0.1"
+tokio-io = "0.1"
 futures = "0.1"
 futures-cpupool = "0.1"
 
