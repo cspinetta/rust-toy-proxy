@@ -15,6 +15,14 @@ path = "src/multi-threads.rs"
 name = "multi-threads-net-2"
 path = "src/multi-threads-net-2.rs"
 
+[[bin]]
+name = "clients-pool"
+path = "src/clients-pool.rs"
+
+[[bin]]
+name = "client-retry"
+path = "src/client-retry.rs"
+
 [dependencies]
 
 log = "0.3"
