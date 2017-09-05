@@ -5,11 +5,18 @@ extern crate tokio_core;
 
 use futures::Future;
 use futures::Stream;
+use futures::stream::Concat2;
 
 use hyper::{Client, Body, Uri, StatusCode};
 use hyper::server::{Request, Response};
 use hyper::client::HttpConnector;
 use hyper::Get;
+use hyper::header::ContentLength;
+use hyper::HttpVersion;
+use hyper::Method;
+use hyper::Chunk;
+
+use hyper::header::{Headers, Host};
 
 use tokio_core::reactor::Core;
 //use error::HttpError;
@@ -32,76 +39,101 @@ fn main() {
 //    fn clone(&self) -> ReusableBody { *self }
 //}
 
+
+#[derive(Clone, Debug, PartialEq)]
+struct RequestHead {
+    pub version: HttpVersion,
+    pub method: Method,
+    pub uri: Uri,
+    pub headers: Headers
+}
+
+impl RequestHead {
+    fn new(version: HttpVersion, method: Method, uri: Uri, headers: Headers) -> RequestHead {
+        RequestHead { version, method, uri, headers }
+    }
+
+    fn from_request(req: &Request) -> Self {
+        Self::new(req.version().clone(), req.method().clone(), req.uri().clone(), req.headers().clone())
+    }
+}
+
 struct ClientHttp {
     max_retry: Arc<u32>
 }
 
 impl ClientHttp {
 
-
-//fn get_body_contents(body: Body) -> Result<Vec<u8>, Error> {
-//    let body = body.wait().fold(Ok(Vec::new()), |r, input| {
-//        if let Ok(mut v) = r {
-//            input.map(move |next_body_chunk| { v.extend_from_slice(&next_body_chunk); v })
-//        } else {
-//            r
-//        }
-//    });
-//    body
-////    if let Some(reader) = body.take() {
-//////        match body {
-//////            Ok(body) => self.extensions.insert::<RequestBodyKey>(body),
-//////            Err(e) => return Err(e),
-//////        };
-////        body
-////    } else {
-////        Body::empty()
-////    }
-//}
+    fn get_content_length_req(req: &Request<Body>) -> Option<u64> {
+        req.headers().get::<ContentLength>().map(|length| {length.0})
+    }
 
     fn clone_req(req: & Request) -> Request {
         let mut forwarded_req = Request::new(req.method().clone(), req.uri().clone());
         forwarded_req.headers_mut().extend(req.headers().iter());
-    //    forwarded_req.set_body(*body.clone());
         forwarded_req
+    }
+
+    fn copy_body(chunk_ref: &Chunk) -> Chunk {
+        Chunk::from(chunk_ref.as_ref().clone().to_vec())
+    }
+
+    fn build_req(head: &RequestHead, body: Chunk) -> Request {
+        let mut new_req = Request::new(head.method.clone(), head.uri.clone());
+        new_req.headers_mut().extend(head.headers.iter());
+        new_req.set_version(head.version.clone());
+        new_req.set_body(body);
+        new_req
     }
 
     fn dispatch_request(self, client: &Client<HttpConnector, Body>, req: Request<Body>, n_retry: u32) -> Box<Future<Error=hyper::Error, Item=Response>>
     {
         println!("Attemp {}", n_retry);
-//        let max_retry = Arc::new(self.max_retry);
 
         let client_clone = client.clone();
         let ref_max = self.max_retry.clone();
 
+        let head = RequestHead::from_request(&req);
+        let content_length = Self::get_content_length_req(&req);
 
-    //    let (method, uri, version, headers, body) = req.deconstruct();
 
-        let cloned_req = ClientHttp::clone_req(&req);
+        match content_length {
+            Some(length) if length <= 1024 => {
+                println!("The request has a small length, so it's possible to retry. Content Length: {}", length);
+                let shared_body: Concat2<Body> = req.body().concat2();
 
-        let resp = client.request(req).then(move |result| {
-            println!("Max retry: {}. Current attemp: {}", ref_max.clone(), n_retry);
-            match result {
-                Ok(client_resp) => {
-                    if client_resp.status() == hyper::StatusCode::Ok {
-                        Box::new(futures::future::ok(client_resp))
-                    } else if n_retry < *ref_max.clone() {
-                        self.dispatch_request(&client_clone, ClientHttp::clone_req(&cloned_req), n_retry + 1)
-                    } else {
-                        Box::new(futures::future::ok(Response::new().with_status(StatusCode::ServiceUnavailable)))
-                    }
-                },
-                Err(e) => {
-                    println!("Connection error: {:?}", &e);
-                    if n_retry < *ref_max.clone() {
-                        self.dispatch_request(&client_clone, ClientHttp::clone_req(&cloned_req), n_retry + 1)
-                    } else {
-                        Box::new(futures::future::ok(Response::new().with_status(StatusCode::ServiceUnavailable)))
-                    }
+                let r = shared_body.and_then(move |whole_body| {
 
-                }
+                    let new_req = Self::build_req(&head.clone(), Self::copy_body(&whole_body));
+
+                    println!("Attemp {} for url: {:?}", n_retry, new_req);
+
+                    let resp = client_clone.request(new_req).then(move |result| {
+                        println!("Max retry: {}. Current attemp: {}", ref_max.clone(), n_retry);
+                        match result {
+                            Ok(client_resp) => Box::new(futures::future::ok(client_resp)),
+                            Err(e) => {
+                                println!("Connection error: {:?}", &e);
+                                if (n_retry < *ref_max.clone()) && (head.method == Get) {
+
+                                    let new_req = Self::build_req(&head.clone(), Self::copy_body(&whole_body));
+                                    self.dispatch_request(&client_clone, new_req, n_retry + 1)
+                                } else {
+                                    Box::new(futures::future::ok(Response::new().with_status(StatusCode::ServiceUnavailable)))
+                                }
+
+                            }
+                        }
+                    });
+                    Box::new(resp)
+                });
+                Box::new(r)
+
+            },
+            _ => {
+                println!("The request has a length enough big or unknown, so it's not possible to consume the body and retry");
+                Box::new(client_clone.request(req))
             }
-        });
-        Box::new(resp)
+        }
     }
 }
